@@ -1,5 +1,8 @@
 package tech.powerjob.worker.persistence;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import tech.powerjob.worker.common.constants.TaskStatus;
 import tech.powerjob.worker.core.processor.TaskResult;
 import com.google.common.collect.Lists;
@@ -17,6 +20,7 @@ import java.util.Map;
  * @author tjq
  * @since 2020/3/17
  */
+@Data
 @AllArgsConstructor
 public class TaskDAOImpl implements TaskDAO {
     
@@ -75,18 +79,18 @@ public class TaskDAOImpl implements TaskDAO {
 
     @Override
     public List<TaskDO> simpleQuery(SimpleTaskQuery query) throws SQLException {
-        ResultSet rs = null;
+        ResultSet resultSetTask = null;
         String sql = "select * from task_info where " + query.getQueryCondition();
         List<TaskDO> result = Lists.newLinkedList();
         try (Connection conn = connectionFactory.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            rs = ps.executeQuery();
-            while (rs.next()) {
-                result.add(convert(rs));
+            resultSetTask = ps.executeQuery();
+            while (resultSetTask.next()) {
+                result.add(convert(resultSetTask));
             }
         } finally {
-            if (rs != null) {
+            if (resultSetTask != null) {
                 try {
-                    rs.close();
+                    resultSetTask.close();
                 }catch (Exception ignore) {
                 }
             }
@@ -96,28 +100,28 @@ public class TaskDAOImpl implements TaskDAO {
 
     @Override
     public List<Map<String, Object>> simpleQueryPlus(SimpleTaskQuery query) throws SQLException {
-        ResultSet rs = null;
+        ResultSet resultSetTask = null;
         String sqlFormat = "select %s from task_info where %s";
         String sql = String.format(sqlFormat, query.getQueryContent(), query.getQueryCondition());
         List<Map<String, Object>> result = Lists.newLinkedList();
         try (Connection conn = connectionFactory.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            rs = ps.executeQuery();
+            resultSetTask = ps.executeQuery();
             // 原数据，包含了列名
-            ResultSetMetaData  metaData = rs.getMetaData();
-            while (rs.next()) {
+            ResultSetMetaData  metaData = resultSetTask.getMetaData();
+            while (resultSetTask.next()) {
                 Map<String, Object> row = Maps.newHashMap();
                 result.add(row);
 
                 for (int i = 0; i < metaData.getColumnCount(); i++) {
                     String colName = metaData.getColumnName(i + 1);
-                    Object colValue = rs.getObject(colName);
+                    Object colValue = resultSetTask.getObject(colName);
                     row.put(colName, colValue);
                 }
             }
         } finally {
-            if (rs != null) {
+            if (resultSetTask != null) {
                 try {
-                    rs.close();
+                    resultSetTask.close();
                 }catch (Exception ignore) {
                 }
             }
@@ -137,31 +141,31 @@ public class TaskDAOImpl implements TaskDAO {
 
     @Override
     public List<TaskResult> getAllTaskResult(Long instanceId, Long subInstanceId) throws SQLException {
-        ResultSet rs = null;
+        ResultSet resultSetTask = null;
         List<TaskResult> taskResults = Lists.newLinkedList();
         String sql = "select task_id, status, result from task_info where instance_id = ? and sub_instance_id = ?";
         try (Connection conn = connectionFactory.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, instanceId);
             ps.setLong(2, subInstanceId);
-            rs = ps.executeQuery();
-            while (rs.next()) {
+            resultSetTask = ps.executeQuery();
+            while (resultSetTask.next()) {
 
-                int taskStatus = rs.getInt(2);
+                int taskStatus = resultSetTask.getInt(2);
 
                 // 只需要完成的结果
                 if (taskStatus == TaskStatus.WORKER_PROCESS_SUCCESS.getValue() || taskStatus == TaskStatus.WORKER_PROCESS_FAILED.getValue()) {
                     TaskResult result = new TaskResult();
                     taskResults.add(result);
 
-                    result.setTaskId(rs.getString(1));
+                    result.setTaskId(resultSetTask.getString(1));
                     result.setSuccess(taskStatus == TaskStatus.WORKER_PROCESS_SUCCESS.getValue());
-                    result.setResult(rs.getString(3));
+                    result.setResult(resultSetTask.getString(3));
                 }
             }
         }finally {
-            if (rs != null) {
+            if (resultSetTask != null) {
                 try {
-                    rs.close();
+                    resultSetTask.close();
                 }catch (Exception ignore) {
                 }
             }
