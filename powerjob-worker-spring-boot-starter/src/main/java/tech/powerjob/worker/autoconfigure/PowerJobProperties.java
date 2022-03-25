@@ -21,7 +21,7 @@ public class PowerJobProperties {
     private final Worker worker = new Worker();
 
     public Worker getWorker() {
-        return worker;
+        return this.worker;
     }
 
     @Deprecated

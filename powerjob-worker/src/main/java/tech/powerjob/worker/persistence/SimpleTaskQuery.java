@@ -36,10 +36,10 @@ public class SimpleTaskQuery {
         if (!StringUtils.isEmpty(taskId)) {
             sb.append("task_id = '").append(taskId).append("'").append(LINK);
         }
-        if (subInstanceId != null) {
+        if (this.subInstanceId != null) {
             sb.append("sub_instance_id = ").append(subInstanceId).append(LINK);
         }
-        if (instanceId != null) {
+        if (this.instanceId != null) {
             sb.append("instance_id = ").append(instanceId).append(LINK);
         }
         if (!StringUtils.isEmpty(address)) {
@@ -48,7 +48,7 @@ public class SimpleTaskQuery {
         if (!StringUtils.isEmpty(taskName)) {
             sb.append("task_name = '").append(taskName).append("'").append(LINK);
         }
-        if (status != null) {
+        if (this.status != null) {
             sb.append("status = ").append(status).append(LINK);
         }
 
@@ -62,7 +62,7 @@ public class SimpleTaskQuery {
             substring += otherCondition;
         }
 
-        if (limit != null) {
+        if (this.limit != null) {
             substring = substring + " limit " + limit;
         }
         return substring;
