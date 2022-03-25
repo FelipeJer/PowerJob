@@ -43,24 +43,24 @@ public class TaskDAOImpl implements TaskDAO {
     @Override
     public boolean save(TaskDO task) throws SQLException {
         String insertSQL = "insert into task_info(task_id, instance_id, sub_instance_id, task_name, task_content, address, status, result, failed_cnt, created_time, last_modified_time, last_report_time) values (?,?,?,?,?,?,?,?,?,?,?,?)";
-        try (Connection conn = connectionFactory.getConnection(); PreparedStatement ps = conn.prepareStatement(insertSQL)) {
-            fillInsertPreparedStatement(task, ps);
-            return ps.executeUpdate() == 1;
+        try (Connection conn = connectionFactory.getConnection(); PreparedStatement preparedState = conn.prepareStatement(insertSQL)) {
+            fillInsertPreparedStatement(task, preparedState);
+            return preparedState.executeUpdate() == 1;
         }
     }
 
     @Override
     public boolean batchSave(Collection<TaskDO> tasks) throws SQLException {
         String insertSQL = "insert into task_info(task_id, instance_id, sub_instance_id, task_name, task_content, address, status, result, failed_cnt, created_time, last_modified_time, last_report_time) values (?,?,?,?,?,?,?,?,?,?,?,?)";
-        try (Connection conn = connectionFactory.getConnection(); PreparedStatement ps = conn.prepareStatement(insertSQL)) {
+        try (Connection conn = connectionFactory.getConnection(); PreparedStatement preparedState = conn.prepareStatement(insertSQL)) {
 
             for (TaskDO task : tasks) {
 
-                fillInsertPreparedStatement(task, ps);
-                ps.addBatch();
+                fillInsertPreparedStatement(task, preparedState);
+                preparedState.addBatch();
             }
 
-            ps.executeBatch();
+            preparedState.executeBatch();
             return true;
 
         }
@@ -104,8 +104,8 @@ public class TaskDAOImpl implements TaskDAO {
         String sqlFormat = "select %s from task_info where %s";
         String sql = String.format(sqlFormat, query.getQueryContent(), query.getQueryCondition());
         List<Map<String, Object>> result = Lists.newLinkedList();
-        try (Connection conn = connectionFactory.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            resultSetTask = ps.executeQuery();
+        try (Connection conn = connectionFactory.getConnection(); PreparedStatement preparedState = conn.prepareStatement(sql)) {
+            resultSetTask = preparedState.executeQuery();
             // 原数据，包含了列名
             ResultSetMetaData  metaData = resultSetTask.getMetaData();
             while (resultSetTask.next()) {
@@ -144,10 +144,10 @@ public class TaskDAOImpl implements TaskDAO {
         ResultSet resultSetTask = null;
         List<TaskResult> taskResults = Lists.newLinkedList();
         String sql = "select task_id, status, result from task_info where instance_id = ? and sub_instance_id = ?";
-        try (Connection conn = connectionFactory.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, instanceId);
-            ps.setLong(2, subInstanceId);
-            resultSetTask = ps.executeQuery();
+        try (Connection conn = connectionFactory.getConnection(); PreparedStatement preparedState = conn.prepareStatement(sql)) {
+            preparedState.setLong(1, instanceId);
+            preparedState.setLong(2, subInstanceId);
+            resultSetTask = preparedState.executeQuery();
             while (resultSetTask.next()) {
 
                 int taskStatus = resultSetTask.getInt(2);
@@ -176,15 +176,15 @@ public class TaskDAOImpl implements TaskDAO {
     @Override
     public boolean updateTaskStatus(Long instanceId, String taskId, int status, long lastReportTime, String result) throws SQLException {
         String sql = "update task_info set status = ?, last_report_time = ?, result = ?, last_modified_time = ? where instance_id = ? and task_id = ?";
-        try (Connection conn = connectionFactory.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = connectionFactory.getConnection(); PreparedStatement preparedState = conn.prepareStatement(sql)) {
 
-            ps.setInt(1, status);
-            ps.setLong(2, lastReportTime);
-            ps.setString(3, result);
-            ps.setLong(4, lastReportTime);
-            ps.setLong(5, instanceId);
-            ps.setString(6, taskId);
-            ps.executeUpdate();
+            preparedState.setInt(1, status);
+            preparedState.setLong(2, lastReportTime);
+            preparedState.setString(3, result);
+            preparedState.setLong(4, lastReportTime);
+            preparedState.setLong(5, instanceId);
+            preparedState.setString(6, taskId);
+            preparedState.executeUpdate();
             return true;
         }
     }
@@ -207,19 +207,19 @@ public class TaskDAOImpl implements TaskDAO {
     }
 
     // 填充插入字段
-    private static void fillInsertPreparedStatement(TaskDO task, PreparedStatement ps) throws SQLException {
-        ps.setString(1, task.getTaskId());
-        ps.setLong(2, task.getInstanceId());
-        ps.setLong(3, task.getSubInstanceId());
-        ps.setString(4, task.getTaskName());
-        ps.setBytes(5, task.getTaskContent());
-        ps.setString(6, task.getAddress());
-        ps.setInt(7, task.getStatus());
-        ps.setString(8, task.getResult());
-        ps.setInt(9, task.getFailedCnt());
-        ps.setLong(10, task.getCreatedTime());
-        ps.setLong(11, task.getLastModifiedTime());
-        ps.setLong(12, task.getLastReportTime());
+    private static void fillInsertPreparedStatement(TaskDO task, PreparedStatement preparedState) throws SQLException {
+        preparedState.setString(1, task.getTaskId());
+        preparedState.setLong(2, task.getInstanceId());
+        preparedState.setLong(3, task.getSubInstanceId());
+        preparedState.setString(4, task.getTaskName());
+        preparedState.setBytes(5, task.getTaskContent());
+        preparedState.setString(6, task.getAddress());
+        preparedState.setInt(7, task.getStatus());
+        preparedState.setString(8, task.getResult());
+        preparedState.setInt(9, task.getFailedCnt());
+        preparedState.setLong(10, task.getCreatedTime());
+        preparedState.setLong(11, task.getLastModifiedTime());
+        preparedState.setLong(12, task.getLastReportTime());
     }
 
 
