@@ -101,7 +101,9 @@ public abstract class AbstractScriptProcessor extends CommonBasicProcessor {
         // 如果是下载链接，则从网络获取
         for (String protocol : DOWNLOAD_PROTOCOL) {
             if (processorInfo.startsWith(protocol)) {
-                FileUtils.copyURLToFile(new URL(processorInfo), script, 5000, 300000);
+                int connectionTimeout = 5000;
+                int readTimeout = 300000;
+                FileUtils.copyURLToFile(new URL(processorInfo), script, connectionTimeout, readTimeout);
                 return scriptPath;
             }
         }

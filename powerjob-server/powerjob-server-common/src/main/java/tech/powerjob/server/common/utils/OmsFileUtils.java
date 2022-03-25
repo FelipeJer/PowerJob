@@ -84,7 +84,8 @@ public class OmsFileUtils {
     public static void file2HttpResponse(File file, HttpServletResponse response) throws IOException {
 
         response.setContentType("application/octet-stream");
-        response.setHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), "UTF-8"));
+        String encode = "UTF-8";
+        response.setHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), encode));
 
         byte[] buffer = new byte[4096];
         try (BufferedOutputStream bos = new BufferedOutputStream(response.getOutputStream());

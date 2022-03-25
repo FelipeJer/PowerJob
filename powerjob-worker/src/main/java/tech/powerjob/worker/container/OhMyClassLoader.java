@@ -48,7 +48,8 @@ public class OhMyClassLoader extends URLClassLoader {
                 }
 
                 // 转换 org/spring/AAA.class -> org.spring.AAA
-                String tmp = name.substring(0, name.length() - 6);
+                final int nameLengthDefault = 6;
+                String tmp = name.substring(0, name.length() - nameLengthDefault);
                 String res = StringUtils.replace(tmp, "/", ".");
 
                 if (res.startsWith(packageName)) {

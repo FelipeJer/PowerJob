@@ -93,7 +93,8 @@ public class OmsLogHandler {
 
                 while (!logQueue.isEmpty()) {
                     try {
-                        InstanceLogContent logContent = logQueue.poll(100, TimeUnit.MILLISECONDS);
+                        final int timeout = 100;
+                        InstanceLogContent logContent = logQueue.poll(timeout, TimeUnit.MILLISECONDS);
                         logs.add(logContent);
 
                         if (logs.size() >= BATCH_SIZE) {

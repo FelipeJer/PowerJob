@@ -363,8 +363,10 @@ public class InstanceLogService {
 
         if (!CollectionUtils.isEmpty(frequentInstanceIds)) {
             // 只保留最近10分钟的日志
-            long time = System.currentTimeMillis() - 10 * 60 * 1000;
-            Lists.partition(frequentInstanceIds, 100).forEach(p -> {
+            int timeMill = 10 * 60 * 1000;
+            long time = System.currentTimeMillis() - timeMill;
+            int size = 100;
+            Lists.partition(frequentInstanceIds, size).forEach(p -> {
                 try {
                     localInstanceLogRepository.deleteByInstanceIdInAndLogTimeLessThan(p, time);
                 }catch (Exception e) {
