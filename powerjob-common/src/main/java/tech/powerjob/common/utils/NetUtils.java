@@ -94,7 +94,32 @@ public class NetUtils {
             NetworkInterface networkInterface = findNetworkInterface();
             Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
             while (addresses.hasMoreElements()) {
-                Optional<InetAddress> addressOp = toValidAddress(addresses.nextElement());
+                Optional<InetAddress> addressOp = null;
+                boolean finished = false;
+                InetAddress address = addresses.nextElement();
+                if (address instanceof Inet6Address) {
+                    Inet6Address v6Address = (Inet6Address) address;
+                    if (isPreferIPV6Address()) {
+                        addressOp = Optional.ofNullable(normalizeV6Address(v6Address));
+                        finished = true;
+                    }
+                }
+                if (!finished) {
+                    boolean result = false;
+                    if (address != null && !address.isLoopbackAddress()) {
+                        String name = address.getHostAddress();
+                        result = (name != null
+                                && IP_PATTERN.matcher(name).matches()
+                                && !ANYHOST_VALUE.equals(name)
+                                && !LOCALHOST_VALUE.equals(name));
+                    }
+
+                    if (result) {
+                        addressOp = Optional.of(address);
+                    } else {
+                        addressOp = Optional.empty();
+                    }
+                }
                 if (addressOp.isPresent()) {
                     try {
                         if (addressOp.get().isReachable(100)) {
@@ -111,7 +136,31 @@ public class NetUtils {
 
         try {
             localAddress = InetAddress.getLocalHost();
-            Optional<InetAddress> addressOp = toValidAddress(localAddress);
+            Optional<InetAddress> addressOp = null;
+            boolean finished = false;
+            if (localAddress instanceof Inet6Address) {
+                Inet6Address v6Address = (Inet6Address) localAddress;
+                if (isPreferIPV6Address()) {
+                    addressOp = Optional.ofNullable(normalizeV6Address(v6Address));
+                    finished = true;
+                }
+            }
+            if (!finished) {
+                boolean result = false;
+                if (localAddress != null && !localAddress.isLoopbackAddress()) {
+                    String name = localAddress.getHostAddress();
+                    result = (name != null
+                            && IP_PATTERN.matcher(name).matches()
+                            && !ANYHOST_VALUE.equals(name)
+                            && !LOCALHOST_VALUE.equals(name));
+                }
+
+                if (result) {
+                    addressOp = Optional.of(localAddress);
+                } else {
+                    addressOp = Optional.empty();
+                }
+            }
             if (addressOp.isPresent()) {
                 return addressOp.get();
             }
@@ -153,7 +202,32 @@ public class NetUtils {
             for (NetworkInterface networkInterface : validNetworkInterfaces) {
                 Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
                 while (addresses.hasMoreElements()) {
-                    Optional<InetAddress> addressOp = toValidAddress(addresses.nextElement());
+                    Optional<InetAddress> addressOp = null;
+                    boolean finished = false;
+                    InetAddress address = addresses.nextElement();
+                    if (address instanceof Inet6Address) {
+                        Inet6Address v6Address = (Inet6Address) address;
+                        if (isPreferIPV6Address()) {
+                            addressOp = Optional.ofNullable(normalizeV6Address(v6Address));
+                            finished = true;
+                        }
+                    }
+                    if (!finished) {
+                        boolean result1 = false;
+                        if (address != null && !address.isLoopbackAddress()) {
+                            String name = address.getHostAddress();
+                            result1 = (name != null
+                                    && IP_PATTERN.matcher(name).matches()
+                                    && !ANYHOST_VALUE.equals(name)
+                                    && !LOCALHOST_VALUE.equals(name));
+                        }
+
+                        if (result1) {
+                            addressOp = Optional.of(address);
+                        } else {
+                            addressOp = Optional.empty();
+                        }
+                    }
                     if (addressOp.isPresent()) {
                         try {
                             if (addressOp.get().isReachable(100)) {
@@ -175,19 +249,6 @@ public class NetUtils {
         return result;
     }
 
-    private static Optional<InetAddress> toValidAddress(InetAddress address) {
-        if (address instanceof Inet6Address) {
-            Inet6Address v6Address = (Inet6Address) address;
-            if (isPreferIPV6Address()) {
-                return Optional.ofNullable(normalizeV6Address(v6Address));
-            }
-        }
-        if (isValidV4Address(address)) {
-            return Optional.of(address);
-        }
-        return Optional.empty();
-    }
-
     /**
      * Check if an ipv6 address
      *
@@ -195,18 +256,6 @@ public class NetUtils {
      */
     static boolean isPreferIPV6Address() {
         return Boolean.getBoolean("java.net.preferIPv6Addresses");
-    }
-
-    static boolean isValidV4Address(InetAddress address) {
-        if (address == null || address.isLoopbackAddress()) {
-            return false;
-        }
-
-        String name = address.getHostAddress();
-        return (name != null
-                && IP_PATTERN.matcher(name).matches()
-                && !ANYHOST_VALUE.equals(name)
-                && !LOCALHOST_VALUE.equals(name));
     }
 
     /**
@@ -249,29 +298,37 @@ public class NetUtils {
         Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
         while (interfaces.hasMoreElements()) {
             NetworkInterface networkInterface = interfaces.nextElement();
-            if (ignoreNetworkInterface(networkInterface)) { // ignore
+            if (networkInterface == null
+                    || networkInterface.isLoopback()
+                    || networkInterface.isVirtual()
+                    || !networkInterface.isUp()) { // ignore
                 continue;
             }
             // 根据用户 -D 参数忽略网卡
-            if (ignoreInterfaceByConfig(networkInterface.getDisplayName()) || ignoreInterfaceByConfig(networkInterface.getName())) {
+            boolean result = false;
+            String interfaceName = networkInterface.getName();
+            String regex = System.getProperty(PowerJobDKey.IGNORED_NETWORK_INTERFACE_REGEX);
+            if (!StringUtils.isBlank(regex)) {
+                if (interfaceName.matches(regex)) {
+                    log.info("[Net] ignore network interface: {} by regex({})", interfaceName, regex);
+                    result = true;
+                }
+            }
+            boolean result1 = false;
+            String interfaceName1 = networkInterface.getDisplayName();
+            String regex1 = System.getProperty(PowerJobDKey.IGNORED_NETWORK_INTERFACE_REGEX);
+            if (!StringUtils.isBlank(regex1)) {
+                if (interfaceName1.matches(regex1)) {
+                    log.info("[Net] ignore network interface: {} by regex({})", interfaceName1, regex1);
+                    result1 = true;
+                }
+            }
+            if (result1 || result) {
                 continue;
             }
             validNetworkInterfaces.add(networkInterface);
         }
         return validNetworkInterfaces;
-    }
-
-    /**
-     * @param networkInterface {@link NetworkInterface}
-     * @return if the specified {@link NetworkInterface} should be ignored, return <code>true</code>
-     * @throws SocketException SocketException if an I/O error occurs.
-     * @since 2.7.6
-     */
-    private static boolean ignoreNetworkInterface(NetworkInterface networkInterface) throws SocketException {
-        return networkInterface == null
-                || networkInterface.isLoopback()
-                || networkInterface.isVirtual()
-                || !networkInterface.isUp();
     }
 
     /**
@@ -316,15 +373,4 @@ public class NetUtils {
         return Pair.of(split[0], Integer.valueOf(split[1]));
     }
 
-    static boolean ignoreInterfaceByConfig(String interfaceName) {
-        String regex = System.getProperty(PowerJobDKey.IGNORED_NETWORK_INTERFACE_REGEX);
-        if (StringUtils.isBlank(regex)) {
-            return false;
-        }
-        if (interfaceName.matches(regex)) {
-            log.info("[Net] ignore network interface: {} by regex({})", interfaceName, regex);
-            return true;
-        }
-        return false;
-    }
 }
